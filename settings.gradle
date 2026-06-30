@@ -1,0 +1,10 @@
+plugins {
+    // Java 25 toolchain 이 로컬에 없으면 Gradle 이 자동 다운로드(프로비저닝)하도록 함.
+    // (현재 머신 JDK는 21이지만 build.gradle 은 25 toolchain)
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'cosmos'
+
+include 'services:ingestion-service'
+include 'services:core-service'

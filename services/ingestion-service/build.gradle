@@ -1,0 +1,7 @@
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.kafka:spring-kafka'
+    // Spring Kafka 의 JsonSerializer 는 Jackson 2 기반인데 Boot 4.1 기본은 Jackson 3 라
+    // Jackson 2 databind 를 명시적으로 추가한다 (버전은 Boot BOM 관리).
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+}

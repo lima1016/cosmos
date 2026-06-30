@@ -1,0 +1,40 @@
+server:
+  port: 8081
+
+spring:
+  # 루트의 .env(KEY=VALUE)를 properties 로 읽어들인다 → NASA_API_KEY 등이 자동 주입.
+  # (Spring Boot는 기본적으로 .env 를 안 읽으므로 명시적으로 import)
+  config:
+    import: "optional:file:.env[.properties]"
+  application:
+    name: ingestion-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+cosmos:
+  nasa:
+    # NASA Exoplanet Archive TAP API (API 키 불필요)
+    exoplanet-tap-url: https://exoplanetarchive.ipac.caltech.edu/TAP/sync
+    # 한 번에 가져올 최대 행 수 (개발용 제한; 0이면 전체)
+    max-rows: 500
+    # api.nasa.gov (APOD/NeoWs/Mars 등) — 발급받은 키를 환경변수 NASA_API_KEY 로 주입.
+    # 없으면 DEMO_KEY 로 폴백(한도 낮음).
+    api-base-url: https://api.nasa.gov
+    api-key: ${NASA_API_KEY:DEMO_KEY}
+  kafka:
+    topic:
+      raw-exoplanet: raw.exoplanet
+      raw-apod: raw.apod
+  replay:
+    # 타임라인 리플레이 시 행성 1건당 emit 간격(ms)
+    delay-ms: 150
+  incremental:
+    # 증분 수집 시 "최근 N년 내 발견"만 신규로 간주 (간이 구현)
+    recent-years: 2
+
+logging:
+  level:
+    com.lima.cosmos: DEBUG

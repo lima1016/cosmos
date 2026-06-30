@@ -1,0 +1,22 @@
+# 이미지에 들어갈 필요 없는 것들 (빌드 컨텍스트에서 제외 → 빌드 빠르고 이미지 가벼움)
+.venv/
+.venv2/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE / 로컬 설정
+.idea/
+.vscode/
+.env
+
+# 학습 산출물·로그 (런타임에 생성)
+models/
+*.log
+
+# git
+.git/
+.gitignore

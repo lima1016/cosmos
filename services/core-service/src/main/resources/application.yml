@@ -1,0 +1,52 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: core-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:cosmos}
+    username: ${POSTGRES_USER:cosmos}
+    password: ${POSTGRES_PASSWORD:cosmos}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI:http://localhost:9200}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: core-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: com.lima.cosmos.core.kafka.ExoplanetMessage
+        spring.json.use.type.headers: false
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+cosmos:
+  kafka:
+    topic:
+      raw-exoplanet: raw.exoplanet
+      processed-exoplanet: processed.exoplanet
+      raw-apod: raw.apod
+
+logging:
+  level:
+    com.lima.cosmos: DEBUG

@@ -64,7 +64,7 @@ def predict(req: PredictRequest):
         raise HTTPException(status_code=400, detail="모델이 아직 학습되지 않았습니다. /train 을 먼저 호출하세요.")
     preds = model_service.predict(req.model_dump())
     return PredictResponse(
-        distancePc=preds.get("distancePc"),
+        massEarth=preds.get("massEarth"),
         stellarAgeGyr=preds.get("stellarAgeGyr"),
         note="RandomForest 회귀 예측값",
     )

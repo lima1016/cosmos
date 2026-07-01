@@ -2,6 +2,7 @@ package com.lima.cosmos.core.repository;
 
 import com.lima.cosmos.core.domain.ExoplanetEntity;
 import com.lima.cosmos.core.service.StarPosition;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +10,10 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface ExoplanetRepository extends JpaRepository<ExoplanetEntity, String> {
+
+    /** 이름 또는 항성명 부분일치 검색(대소문자 무시). */
+    Page<ExoplanetEntity> findByNameContainingIgnoreCaseOrHostnameContainingIgnoreCase(
+            String name, String hostname, Pageable pageable);
 
     /**
      * 3D 성도용 항성 위치. 데이터가 무한정 커지지 않도록 Pageable 로 상한을 두고,

@@ -18,4 +18,9 @@ public class KafkaTopicConfig {
     public NewTopic rawApodTopic(@Value("${cosmos.kafka.topic.raw-apod}") String topic) {
         return TopicBuilder.name(topic).partitions(1).replicas(1).build();
     }
+
+    @Bean
+    public NewTopic rawNeoTopic(@Value("${cosmos.kafka.topic.raw-neo}") String topic) {
+        return TopicBuilder.name(topic).partitions(1).replicas(1).build();
+    }
 }

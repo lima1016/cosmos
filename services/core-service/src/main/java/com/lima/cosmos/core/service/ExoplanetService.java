@@ -81,6 +81,14 @@ public class ExoplanetService {
         return repository.findAll(pageable);
     }
 
+    /** 검색어(이름/항성명 부분일치)로 페이지 조회. 비어 있으면 전체. */
+    public Page<ExoplanetEntity> search(String q, Pageable pageable) {
+        if (q == null || q.isBlank()) {
+            return repository.findAll(pageable);
+        }
+        return repository.findByNameContainingIgnoreCaseOrHostnameContainingIgnoreCase(q, q, pageable);
+    }
+
     public List<ExoplanetDocument> searchNearby(double maxDistancePc) {
         return searchRepository.findByDistancePcLessThanEqual(maxDistancePc);
     }

@@ -24,8 +24,9 @@ public class ExoplanetController {
 
     @GetMapping
     public Page<ExoplanetEntity> list(@RequestParam(defaultValue = "0") int page,
-                                      @RequestParam(defaultValue = "20") int size) {
-        return service.list(PageRequest.of(page, size));
+                                      @RequestParam(defaultValue = "20") int size,
+                                      @RequestParam(required = false) String q) {
+        return service.search(q, PageRequest.of(page, size));
     }
 
     @GetMapping("/stats")

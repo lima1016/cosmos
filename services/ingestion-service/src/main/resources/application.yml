@@ -32,6 +32,7 @@ cosmos:
     topic:
       raw-exoplanet: raw.exoplanet
       raw-apod: raw.apod
+      raw-neo: raw.neo
   replay:
     # 타임라인 리플레이 시 행성 1건당 emit 간격(ms)
     delay-ms: 150

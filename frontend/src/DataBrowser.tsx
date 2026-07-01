@@ -5,15 +5,26 @@ export default function DataBrowser() {
   const [page, setPage] = useState(0);
   const [data, setData] = useState<Paged<Planet> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState(""); // 디바운스된 실제 검색어
+
+  // 입력이 멈추면(300ms) 검색어 확정 → 페이지 0으로
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setQuery(search.trim());
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
     setLoading(true);
     api
-      .list(page, 15)
+      .list(page, 15, query)
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, query]);
 
   const totalPages = data?.page?.totalPages ?? 1;
   const total = data?.page?.totalElements ?? 0;
@@ -23,9 +34,19 @@ export default function DataBrowser() {
     <div className="card section">
       <div className="head">
         <h2>저장된 외계행성 데이터</h2>
-        <span className="muted" style={{ fontSize: 12 }}>
-          DB 전체 {total}개 · {totalPages > 0 ? page + 1 : 0}/{Math.max(totalPages, 1)} 페이지
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <input
+            type="text"
+            placeholder="이름·항성 검색…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: 200 }}
+          />
+          <span className="muted" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+            {query ? `검색 ${total}개` : `DB 전체 ${total}개`} ·{" "}
+            {totalPages > 0 ? page + 1 : 0}/{Math.max(totalPages, 1)} 페이지
+          </span>
+        </div>
       </div>
       <table>
         <thead>

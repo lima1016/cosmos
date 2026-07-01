@@ -124,6 +124,9 @@ services:
       PROCESSED_TOPIC: processed.exoplanet
       PREDICTION_TOPIC: prediction.exoplanet
       CORE_SERVICE_URL: http://host.docker.internal:8082
+    # 학습된 모델(.joblib)을 볼륨에 두어 컨테이너 재시작·재빌드에도 유지.
+    volumes:
+      - ai-models:/app/models
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -132,3 +135,4 @@ services:
 
 volumes:
   pgdata:
+  ai-models:

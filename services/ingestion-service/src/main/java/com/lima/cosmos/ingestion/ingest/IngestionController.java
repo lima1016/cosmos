@@ -15,6 +15,7 @@ public class IngestionController {
 
     private final ExoplanetIngestionService service;
     private final ApodIngestionService apodService;
+    private final NeoIngestionService neoService;
 
     /** 전체 적재 */
     @PostMapping("/exoplanet")
@@ -48,5 +49,12 @@ public class IngestionController {
     public Map<String, Object> apodRecent(@RequestParam(defaultValue = "5") int count) {
         int produced = apodService.ingestRecent(count);
         return Map.of("mode", "apod-recent", "produced", produced);
+    }
+
+    /** NeoWs 근지구 천체 수집 (기본 오늘~+6일, 최대 7일 범위). */
+    @PostMapping("/neo")
+    public Object neo(@RequestParam(required = false) String startDate,
+                      @RequestParam(required = false) String endDate) {
+        return neoService.ingest(startDate, endDate);
     }
 }

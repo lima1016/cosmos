@@ -55,16 +55,39 @@ export interface ApodIngestResult {
   title: string | null;
 }
 
+// 근지구 천체(NeoWs) 접근 1건.
+export interface NeoApproach {
+  id: string;
+  neoId: string;
+  name: string;
+  hazardous: boolean;
+  absoluteMagnitudeH: number | null;
+  diameterMinKm: number | null;
+  diameterMaxKm: number | null;
+  closeApproachDate: string;
+  relativeVelocityKmS: number | null;
+  missDistanceKm: number | null;
+  missDistanceLunar: number | null;
+  missDistanceAstronomical: number | null;
+}
+
+export interface NeoIngestResult {
+  startDate: string;
+  endDate: string;
+  produced: number;
+  calledNasaApi: boolean;
+  source: "nasa" | "cache";
+}
+
 export interface PredictInput {
   orbitalPeriodDays: number;
   radiusEarth: number;
-  massEarth: number;
   stellarTeffK: number;
   stellarMassSun: number;
 }
 
 export interface PredictResult {
-  distancePc: number | null;
+  massEarth: number | null;
   stellarAgeGyr: number | null;
   note: string;
 }
@@ -90,9 +113,13 @@ export const api = {
   starMap: (limit = 2000) =>
     fetch(`${GATEWAY}/api/exoplanets/map?limit=${limit}`).then(json<StarPosition[]>),
 
-  // DB에 저장된 외계행성 페이지 조회
-  list: (page = 0, size = 15) =>
-    fetch(`${GATEWAY}/api/exoplanets?page=${page}&size=${size}`).then(json<Paged<Planet>>),
+  // DB에 저장된 외계행성 페이지 조회 (q: 이름/항성명 부분일치 검색)
+  list: (page = 0, size = 15, q = "") =>
+    fetch(
+      `${GATEWAY}/api/exoplanets?page=${page}&size=${size}${
+        q ? `&q=${encodeURIComponent(q)}` : ""
+      }`
+    ).then(json<Paged<Planet>>),
 
   system: (hostname: string) =>
     fetch(`${GATEWAY}/api/exoplanets/system?hostname=${encodeURIComponent(hostname)}`).then(
@@ -131,4 +158,19 @@ export const api = {
 
   // ES(apod 인덱스)에 저장된 천문사진 목록
   apodGallery: () => fetch(`${GATEWAY}/api/apod`).then(json<Apod[]>),
+
+  // NeoWs: 근지구 천체 수집(토큰 사용) 후 저장분 조회
+  ingestNeo: (startDate?: string, endDate?: string) => {
+    const q = new URLSearchParams();
+    if (startDate) q.set("startDate", startDate);
+    if (endDate) q.set("endDate", endDate);
+    const qs = q.toString();
+    return fetch(`${GATEWAY}/api/ingest/neo${qs ? `?${qs}` : ""}`, {
+      method: "POST",
+    }).then(json<NeoIngestResult>);
+  },
+
+  neoUpcoming: () => fetch(`${GATEWAY}/api/neo/upcoming`).then(json<NeoApproach[]>),
+  neoHazardous: () => fetch(`${GATEWAY}/api/neo/hazardous`).then(json<NeoApproach[]>),
+  neoList: () => fetch(`${GATEWAY}/api/neo`).then(json<NeoApproach[]>),
 };

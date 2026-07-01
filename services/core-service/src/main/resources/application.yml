@@ -46,6 +46,7 @@ cosmos:
       raw-exoplanet: raw.exoplanet
       processed-exoplanet: processed.exoplanet
       raw-apod: raw.apod
+      raw-neo: raw.neo
 
 logging:
   level:

@@ -12,11 +12,12 @@ import { Apod, api, PredictInput, PredictResult, Stats } from "./api";
 import SpaceView from "./SpaceView";
 import SystemDetail from "./SystemDetail";
 import DataBrowser from "./DataBrowser";
+import NeoPanel from "./NeoPanel";
+import SolarSystem from "./SolarSystem";
 
 const EARTH: PredictInput = {
   orbitalPeriodDays: 365.25,
   radiusEarth: 1.0,
-  massEarth: 1.0,
   stellarTeffK: 5778,
   stellarMassSun: 1.0,
 };
@@ -24,18 +25,17 @@ const EARTH: PredictInput = {
 const FIELD_LABEL: Record<keyof PredictInput, string> = {
   orbitalPeriodDays: "공전주기 (일)",
   radiusEarth: "반지름 (지구=1)",
-  massEarth: "질량 (지구=1)",
   stellarTeffK: "항성온도 (K)",
   stellarMassSun: "항성질량 (태양=1)",
 };
 
 // 상위 탭 = 주제(데이터 소스)별. soon=아직 미구현(예정 배지).
 const TABS = [
+  { id: "home", label: "태양계" },
   { id: "exo", label: "외계행성" },
   { id: "apod", label: "천문사진" },
-  { id: "neo", label: "근지구 천체", soon: true },
+  { id: "neo", label: "근지구 천체" },
   { id: "weather", label: "우주기상", soon: true },
-  { id: "solar", label: "태양계 탐사", soon: true },
   { id: "media", label: "미디어 검색", soon: true },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -58,7 +58,7 @@ export default function App() {
   const [apod, setApod] = useState<Apod | null>(null);
   const [apods, setApods] = useState<Apod[]>([]);
   const [selectedHost, setSelectedHost] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabId>("exo");
+  const [tab, setTab] = useState<TabId>("home");
   const [exoTab, setExoTab] = useState<ExoTabId>("map");
 
   const loadStats = () => api.stats().then(setStats).catch((e) => setMsg(String(e)));
@@ -134,7 +134,7 @@ export default function App() {
           <span className="sub">NASA Open Data Explorer</span>
         </div>
       </div>
-      <div className="status">{msg}</div>
+      {tab !== "home" && <div className="status">{msg}</div>}
 
       <div className="tabs">
         {TABS.map((t) => (
@@ -150,6 +150,8 @@ export default function App() {
           </button>
         ))}
       </div>
+
+      {tab === "home" && <SolarSystem fullscreen />}
 
       {tab === "exo" && (
         <>
@@ -263,9 +265,9 @@ export default function App() {
 
           {exoTab === "ai" && (
             <div className="card section">
-              <h2>AI 예측 · 거리와 항성 나이</h2>
+              <h2>AI 예측 · 질량과 항성 나이</h2>
               <p className="muted" style={{ marginTop: -4 }}>
-                행성·항성 파라미터로 학습된 모델이 거리(pc)와 항성 나이(Gyr)를 추정합니다.
+                반지름·공전주기·항성 특성으로 질량–반지름 관계 기반 질량(지구=1)과 항성 나이(Gyr)를 추정합니다.
               </p>
               <div
                 style={{
@@ -296,8 +298,8 @@ export default function App() {
                 {pred && (
                   <div style={{ display: "flex", gap: 28 }}>
                     <div>
-                      <div className="muted" style={{ fontSize: 11 }}>예측 거리</div>
-                      <div style={{ fontWeight: 600 }}>{pred.distancePc ?? "—"} pc</div>
+                      <div className="muted" style={{ fontSize: 11 }}>예측 질량</div>
+                      <div style={{ fontWeight: 600 }}>{pred.massEarth ?? "—"} ⊕</div>
                     </div>
                     <div>
                       <div className="muted" style={{ fontSize: 11 }}>예측 항성 나이</div>
@@ -372,6 +374,8 @@ export default function App() {
           )}
         </div>
       )}
+
+      {tab === "neo" && <NeoPanel />}
     </div>
   );
 }

@@ -197,18 +197,15 @@ function SunAndEarth({ glow }: { glow: THREE.Texture }) {
 }
 
 function Scene({
+  stars,
   onSelect,
   onHover,
 }: {
+  stars: StarPosition[];
   onSelect: (h: string) => void;
   onHover: (s: StarPosition | null) => void;
 }) {
   const glow = useGlow();
-  const [stars, setStars] = useState<StarPosition[]>([]);
-
-  useEffect(() => {
-    api.starMap().then(setStars).catch(() => {});
-  }, []);
 
   return (
     <>
@@ -233,6 +230,23 @@ export default function SpaceView({
   onSelect: (hostname: string) => void;
 }) {
   const [hover, setHover] = useState<StarPosition | null>(null);
+  const [allStars, setAllStars] = useState<StarPosition[]>([]);
+  const [maxDist, setMaxDist] = useState<number | null>(null); // 슬라이더 값(pc). null=미설정
+
+  useEffect(() => {
+    api.starMap().then(setAllStars).catch(() => {});
+  }, []);
+
+  // 로드된 별들의 거리 범위. 슬라이더 초기값은 최댓값(=전부 표시).
+  const maxAvailable = useMemo(
+    () => (allStars.length ? Math.ceil(Math.max(...allStars.map((s) => s.distancePc))) : 0),
+    [allStars]
+  );
+  const limit = maxDist ?? maxAvailable;
+  const shown = useMemo(
+    () => allStars.filter((s) => s.distancePc <= limit),
+    [allStars, limit]
+  );
 
   return (
     <div className="stage">
@@ -241,6 +255,22 @@ export default function SpaceView({
         <div className="muted" style={{ fontSize: 12 }}>
           드래그 회전 · 휠 줌 · 별 클릭 시 항성계 상세 · 가운데 태양·지구
         </div>
+        {maxAvailable > 0 && (
+          // overlay 자체는 pointer-events:none 이므로 슬라이더만 auto 로 되살린다.
+          <div style={{ marginTop: 10, pointerEvents: "auto" }}>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+              거리 {Math.round(limit)} pc 이내 · 별 {shown.length} / {allStars.length}개
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={maxAvailable}
+              value={limit}
+              onChange={(e) => setMaxDist(Number(e.target.value))}
+              style={{ width: 220 }}
+            />
+          </div>
+        )}
       </div>
 
       {hover && (
@@ -257,7 +287,7 @@ export default function SpaceView({
         style={{ height: 600, background: "#03050d" }}
         camera={{ position: [0, 26, 92], fov: 60 }}
       >
-        <Scene onSelect={onSelect} onHover={setHover} />
+        <Scene stars={shown} onSelect={onSelect} onHover={setHover} />
       </Canvas>
     </div>
   );

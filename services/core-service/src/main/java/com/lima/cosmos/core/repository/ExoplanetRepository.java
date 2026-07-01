@@ -2,6 +2,7 @@ package com.lima.cosmos.core.repository;
 
 import com.lima.cosmos.core.domain.ExoplanetEntity;
 import com.lima.cosmos.core.service.StarPosition;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -9,14 +10,20 @@ import java.util.List;
 
 public interface ExoplanetRepository extends JpaRepository<ExoplanetEntity, String> {
 
+    /**
+     * 3D 성도용 항성 위치. 데이터가 무한정 커지지 않도록 Pageable 로 상한을 두고,
+     * 가까운(거리 오름차순) 별부터 채운다 — 공간적으로 의미 있는 "태양 이웃" 우선.
+     * 실제 표시 개수(거리 슬라이더)는 프론트에서 이 결과 안에서 필터한다.
+     */
     @Query("""
             select new com.lima.cosmos.core.service.StarPosition(
                 e.hostname, avg(e.ra), avg(e.declination), avg(e.distancePc), avg(e.stellarTeffK), count(e))
             from ExoplanetEntity e
             where e.ra is not null and e.declination is not null and e.distancePc is not null
             group by e.hostname
+            order by avg(e.distancePc) asc
             """)
-    List<StarPosition> findStarPositions();
+    List<StarPosition> findStarPositions(Pageable pageable);
 
     List<ExoplanetEntity> findByHostnameOrderByOrbitalPeriodDaysAsc(String hostname);
 

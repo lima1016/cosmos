@@ -23,12 +23,57 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(1100px 560px at 72% -12%, rgba(110, 139, 255, 0.12), transparent 60%),
-    radial-gradient(820px 460px at 8% 112%, rgba(155, 140, 255, 0.09), transparent 60%),
+    radial-gradient(1200px 620px at 75% -14%, rgba(110, 139, 255, 0.16), transparent 60%),
+    radial-gradient(900px 520px at 6% 110%, rgba(155, 140, 255, 0.13), transparent 60%),
+    radial-gradient(760px 540px at 50% 42%, rgba(70, 100, 210, 0.06), transparent 70%),
     var(--bg);
   color: var(--text);
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ── 우주 별필드 (고정 배경, 콘텐츠 뒤에서 천천히 흐른다) ── */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  z-index: -1;
+  pointer-events: none;
+  background-repeat: repeat;
+}
+body::before {
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 90px 70px, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.6px 1.6px at 150px 120px, #ffffff, transparent),
+    radial-gradient(1px 1px at 60px 180px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.2px 1.2px at 200px 40px, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1px 1px at 240px 160px, rgba(255, 255, 255, 0.5), transparent);
+  background-size: 260px 260px;
+  opacity: 0.7;
+  animation: drift-a 220s linear infinite;
+}
+body::after {
+  background-image:
+    radial-gradient(1.4px 1.4px at 50px 90px, #cfe0ff, transparent),
+    radial-gradient(1px 1px at 130px 30px, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1.8px 1.8px at 180px 150px, #ffffff, transparent);
+  background-size: 340px 340px;
+  opacity: 0.5;
+  animation: drift-b 340s linear infinite, twinkle 7s ease-in-out infinite;
+}
+@keyframes drift-a {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-260px, -260px, 0); }
+}
+@keyframes drift-b {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(340px, -340px, 0); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.32; }
+  50% { opacity: 0.6; }
 }
 
 .app {
@@ -105,6 +150,70 @@ button.primary:hover:not(:disabled) {
 }
 button.ghost {
   background: transparent;
+}
+
+/* ── tabs ── */
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 2px;
+}
+.tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 9px 15px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.tab:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+.tab.active {
+  background: var(--surface-hover);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+}
+.tab .badge {
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent-2);
+  background: rgba(155, 140, 255, 0.14);
+  border: 1px solid rgba(155, 140, 255, 0.3);
+  border-radius: 6px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
+
+/* 하위 탭 + 맥락 액션을 한 줄에 (좌: 탭, 우: 액션) */
+.tabbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 14px 0 2px;
+}
+.tabbar .subtabs {
+  margin: 0;
+}
+
+/* 하위 탭(주제 내부) — 상위보다 작고 촘촘하게 */
+.subtabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 14px 0 2px;
+}
+.subtabs .tab {
+  padding: 7px 13px;
+  font-size: 12.5px;
+  border-radius: 8px;
 }
 
 /* ── layout ── */

@@ -24,6 +24,10 @@ cosmos:
     # 없으면 DEMO_KEY 로 폴백(한도 낮음).
     api-base-url: https://api.nasa.gov
     api-key: ${NASA_API_KEY:DEMO_KEY}
+  # core-service 주소 — APOD 중복 수집 방지를 위해 "오늘 이미 저장됐는지" 조회할 때 사용.
+  # 개발은 호스트(8082), 컨테이너 환경에선 CORE_SERVICE_URL 로 덮어씀.
+  core:
+    base-url: ${CORE_SERVICE_URL:http://localhost:8082}
   kafka:
     topic:
       raw-exoplanet: raw.exoplanet

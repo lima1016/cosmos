@@ -29,6 +29,26 @@ const FIELD_LABEL: Record<keyof PredictInput, string> = {
   stellarMassSun: "항성질량 (태양=1)",
 };
 
+// 상위 탭 = 주제(데이터 소스)별. soon=아직 미구현(예정 배지).
+const TABS = [
+  { id: "exo", label: "외계행성" },
+  { id: "apod", label: "천문사진" },
+  { id: "neo", label: "근지구 천체", soon: true },
+  { id: "weather", label: "우주기상", soon: true },
+  { id: "solar", label: "태양계 탐사", soon: true },
+  { id: "media", label: "미디어 검색", soon: true },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
+// 외계행성 탭 내부 하위 탭.
+const EXO_TABS = [
+  { id: "map", label: "성도" },
+  { id: "stats", label: "통계" },
+  { id: "data", label: "데이터" },
+  { id: "ai", label: "AI 예측" },
+] as const;
+type ExoTabId = (typeof EXO_TABS)[number]["id"];
+
 export default function App() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [msg, setMsg] = useState("");
@@ -38,6 +58,8 @@ export default function App() {
   const [apod, setApod] = useState<Apod | null>(null);
   const [apods, setApods] = useState<Apod[]>([]);
   const [selectedHost, setSelectedHost] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabId>("exo");
+  const [exoTab, setExoTab] = useState<ExoTabId>("map");
 
   const loadStats = () => api.stats().then(setStats).catch((e) => setMsg(String(e)));
   const loadApod = () => api.apodLatest().then(setApod).catch(() => {});
@@ -63,21 +85,22 @@ export default function App() {
     }
   };
 
-  const refreshAll = async () => {
-    setMsg("새로고침 중…");
-    await Promise.all([loadStats(), loadApod(), loadGallery()]);
-    setMsg("");
-  };
-
   const collectApod = async (recent: boolean) => {
     setBusy(true);
     setMsg(recent ? "최근 천문사진 수집 중…" : "오늘의 천문사진 수집 중…");
     try {
-      await (recent ? api.ingestApodRecent(5) : api.ingestApod());
+      // 오늘 이미 저장돼 있으면 NASA 호출을 건너뜀 → 하루 API 한도 절약
+      let cached = false;
+      if (recent) {
+        await api.ingestApodRecent(5);
+      } else {
+        const res = await api.ingestApod();
+        cached = !!res && res.calledNasaApi === false;
+      }
       await new Promise((r) => setTimeout(r, recent ? 1500 : 1000));
       await loadApod();
       await loadGallery();
-      setMsg("천문사진 갱신 완료");
+      setMsg(cached ? "오늘 사진은 이미 저장돼 있어 API 없이 불러왔어요" : "천문사진 갱신 완료");
     } catch (e) {
       setMsg(`천문사진 실패: ${e}`);
     } finally {
@@ -108,31 +131,71 @@ export default function App() {
       <div className="topbar">
         <div className="brand">
           <h1>COSMOS</h1>
-          <span className="sub">NASA Exoplanet Explorer</span>
-        </div>
-        <div className="actions">
-          <button className="primary" disabled={busy} onClick={() => run("데이터 수집", api.backfill)}>
-            데이터 수집
-          </button>
-          <button disabled={busy} onClick={() => run("타임라인 재생", api.replay)}>
-            타임라인 재생
-          </button>
-          <button disabled={busy} onClick={() => run("모델 학습", api.trainAI)}>
-            모델 학습
-          </button>
-          <button className="ghost" disabled={busy} onClick={refreshAll}>
-            새로고침
-          </button>
+          <span className="sub">NASA Open Data Explorer</span>
         </div>
       </div>
       <div className="status">{msg}</div>
 
-      <SpaceView onSelect={setSelectedHost} />
+      <div className="tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`tab${tab === t.id ? " active" : ""}`}
+            disabled={"soon" in t && t.soon}
+            title={"soon" in t && t.soon ? "준비 중" : undefined}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+            {"soon" in t && t.soon && <span className="badge">예정</span>}
+          </button>
+        ))}
+      </div>
 
-      {selectedHost && (
-        <SystemDetail hostname={selectedHost} onClose={() => setSelectedHost(null)} />
-      )}
+      {tab === "exo" && (
+        <>
+          <div className="tabbar">
+            <div className="subtabs">
+              {EXO_TABS.map((t) => (
+                <button
+                  key={t.id}
+                  className={`tab${exoTab === t.id ? " active" : ""}`}
+                  onClick={() => setExoTab(t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="actions">
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={() => run("외계행성 수집", api.backfill)}
+              >
+                데이터 수집
+              </button>
+              <button disabled={busy} onClick={() => run("타임라인 재생", api.replay)}>
+                타임라인 재생
+              </button>
+              <button className="ghost" disabled={busy} onClick={loadStats}>
+                새로고침
+              </button>
+            </div>
+          </div>
 
+          {exoTab === "map" && (
+            <div className="section">
+              <SpaceView onSelect={setSelectedHost} />
+              {selectedHost && (
+                <SystemDetail
+                  hostname={selectedHost}
+                  onClose={() => setSelectedHost(null)}
+                />
+              )}
+            </div>
+          )}
+
+          {exoTab === "stats" && (
+            <>
       <div className="row section">
         <div className="card metric">
           <div className="label">등록된 외계행성</div>
@@ -174,111 +237,6 @@ export default function App() {
         </ResponsiveContainer>
       </div>
 
-      <DataBrowser />
-
-      <div className="card section">
-        <div className="head">
-          <h2>오늘의 천문사진</h2>
-          <div className="actions">
-            <button disabled={busy} onClick={() => collectApod(false)}>
-              오늘의 사진
-            </button>
-            <button disabled={busy} onClick={() => collectApod(true)}>
-              최근 사진 수집
-            </button>
-          </div>
-        </div>
-
-        {apod ? (
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            {apod.mediaType === "image" ? (
-              <img
-                src={apod.url}
-                alt={apod.title}
-                style={{
-                  width: 340,
-                  maxWidth: "100%",
-                  borderRadius: 12,
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <a href={apod.url} target="_blank" rel="noreferrer">
-                영상 보기
-              </a>
-            )}
-            <div style={{ flex: 1, minWidth: 280 }}>
-              <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{apod.title}</div>
-              <div className="muted" style={{ marginBottom: 10 }}>{apod.date}</div>
-              <p className="muted">{apod.explanation}</p>
-              {apod.copyright && <div className="muted">© {apod.copyright}</div>}
-            </div>
-          </div>
-        ) : (
-          <div className="muted">
-            저장된 천문사진이 없습니다. ‘오늘의 사진’으로 수집하면 Elasticsearch에 저장됩니다.
-          </div>
-        )}
-
-        {apods.length > 0 && (
-          <div className="gallery" style={{ marginTop: 18 }}>
-            {apods.map((a) => (
-              <div className="thumb" key={a.date} onClick={() => setApod(a)} title={a.title}>
-                {a.mediaType === "image" ? (
-                  <img src={a.url} alt={a.title} />
-                ) : (
-                  <div style={{ height: 88, display: "grid", placeItems: "center" }}>VIDEO</div>
-                )}
-                <div className="cap">{a.date}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="card section">
-        <h2>AI 예측 · 거리와 항성 나이</h2>
-        <p className="muted" style={{ marginTop: -4 }}>
-          행성·항성 파라미터로 학습된 모델이 거리(pc)와 항성 나이(Gyr)를 추정합니다.
-        </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: 12,
-            marginTop: 12,
-          }}
-        >
-          {(Object.keys(EARTH) as (keyof PredictInput)[]).map((k) => (
-            <label className="field" key={k}>
-              {FIELD_LABEL[k]}
-              <input
-                type="number"
-                value={input[k]}
-                onChange={(e) => setInput({ ...input, [k]: parseFloat(e.target.value) })}
-              />
-            </label>
-          ))}
-        </div>
-        <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 18 }}>
-          <button className="primary" disabled={busy} onClick={doPredict}>
-            예측하기
-          </button>
-          {pred && (
-            <div style={{ display: "flex", gap: 28 }}>
-              <div>
-                <div className="muted" style={{ fontSize: 11 }}>예측 거리</div>
-                <div style={{ fontWeight: 600 }}>{pred.distancePc ?? "—"} pc</div>
-              </div>
-              <div>
-                <div className="muted" style={{ fontSize: 11 }}>예측 항성 나이</div>
-                <div style={{ fontWeight: 600 }}>{pred.stellarAgeGyr ?? "—"} Gyr</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="card section">
         <h2>가까운 외계행성</h2>
         <table>
@@ -298,6 +256,122 @@ export default function App() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
+
+          {exoTab === "data" && <DataBrowser />}
+
+          {exoTab === "ai" && (
+            <div className="card section">
+              <h2>AI 예측 · 거리와 항성 나이</h2>
+              <p className="muted" style={{ marginTop: -4 }}>
+                행성·항성 파라미터로 학습된 모델이 거리(pc)와 항성 나이(Gyr)를 추정합니다.
+              </p>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                  gap: 12,
+                  marginTop: 12,
+                }}
+              >
+                {(Object.keys(EARTH) as (keyof PredictInput)[]).map((k) => (
+                  <label className="field" key={k}>
+                    {FIELD_LABEL[k]}
+                    <input
+                      type="number"
+                      value={input[k]}
+                      onChange={(e) => setInput({ ...input, [k]: parseFloat(e.target.value) })}
+                    />
+                  </label>
+                ))}
+              </div>
+              <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <button className="primary" disabled={busy} onClick={doPredict}>
+                  예측하기
+                </button>
+                <button disabled={busy} onClick={() => run("모델 학습", api.trainAI)}>
+                  모델 학습
+                </button>
+                {pred && (
+                  <div style={{ display: "flex", gap: 28 }}>
+                    <div>
+                      <div className="muted" style={{ fontSize: 11 }}>예측 거리</div>
+                      <div style={{ fontWeight: 600 }}>{pred.distancePc ?? "—"} pc</div>
+                    </div>
+                    <div>
+                      <div className="muted" style={{ fontSize: 11 }}>예측 항성 나이</div>
+                      <div style={{ fontWeight: 600 }}>{pred.stellarAgeGyr ?? "—"} Gyr</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === "apod" && (
+        <div className="card section">
+          <div className="head">
+            <h2>오늘의 천문사진</h2>
+            <div className="actions">
+              <button disabled={busy} onClick={() => collectApod(false)}>
+                오늘의 사진
+              </button>
+              <button disabled={busy} onClick={() => collectApod(true)}>
+                최근 사진 수집
+              </button>
+            </div>
+          </div>
+
+          {apod ? (
+            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+              {apod.mediaType === "image" ? (
+                <img
+                  src={apod.url}
+                  alt={apod.title}
+                  style={{
+                    width: 340,
+                    maxWidth: "100%",
+                    borderRadius: 12,
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <a href={apod.url} target="_blank" rel="noreferrer">
+                  영상 보기
+                </a>
+              )}
+              <div style={{ flex: 1, minWidth: 280 }}>
+                <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{apod.title}</div>
+                <div className="muted" style={{ marginBottom: 10 }}>{apod.date}</div>
+                <p className="muted">{apod.explanation}</p>
+                {apod.copyright && <div className="muted">© {apod.copyright}</div>}
+              </div>
+            </div>
+          ) : (
+            <div className="muted">
+              저장된 천문사진이 없습니다. ‘오늘의 사진’으로 수집하면 Elasticsearch에 저장됩니다.
+            </div>
+          )}
+
+          {apods.length > 0 && (
+            <div className="gallery" style={{ marginTop: 18 }}>
+              {apods.map((a) => (
+                <div className="thumb" key={a.date} onClick={() => setApod(a)} title={a.title}>
+                  {a.mediaType === "image" ? (
+                    <img src={a.url} alt={a.title} />
+                  ) : (
+                    <div style={{ height: 88, display: "grid", placeItems: "center" }}>VIDEO</div>
+                  )}
+                  <div className="cap">{a.date}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

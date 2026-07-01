@@ -69,6 +69,25 @@ services:
       timeout: 10s
       retries: 10
 
+  # ES 관리/조회 UI. ES 와 같은 메이저(9.4.2)로 맞춘다.
+  # ES 가 xpack.security.enabled=false 라 별도 인증 없이 접속(개발용).
+  # 컨테이너 네트워크 안에서 elasticsearch:9200 으로 접근. 브라우저: http://localhost:5601
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.4.2
+    container_name: cosmos-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
   redis:
     image: redis:7-alpine
     container_name: cosmos-redis

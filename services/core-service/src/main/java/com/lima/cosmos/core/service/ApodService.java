@@ -32,6 +32,12 @@ public class ApodService {
         return repository.findTop1ByOrderByDateDesc();
     }
 
+    /** 해당 날짜(YYYY-MM-DD)의 APOD가 이미 ES에 있는지. date가 곧 @Id 라 existsById 로 조회. */
+    public boolean exists(String date) {
+        if (date == null || date.isBlank()) return false;
+        return repository.existsById(date);
+    }
+
     public List<ApodDocument> recent() {
         return repository.findTop24ByOrderByDateDesc();
     }

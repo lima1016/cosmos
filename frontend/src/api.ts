@@ -47,6 +47,14 @@ export interface Apod {
   copyright?: string;
 }
 
+// 오늘의 APOD 수집 결과. calledNasaApi=false 면 이미 저장돼 있어 API 호출을 건너뛴 것.
+export interface ApodIngestResult {
+  date: string;
+  source: "nasa" | "cache";
+  calledNasaApi: boolean;
+  title: string | null;
+}
+
 export interface PredictInput {
   orbitalPeriodDays: number;
   radiusEarth: number;
@@ -78,8 +86,9 @@ async function json<T>(res: Response): Promise<T> {
 export const api = {
   stats: () => fetch(`${GATEWAY}/api/exoplanets/stats`).then(json<Stats>),
 
-  starMap: () =>
-    fetch(`${GATEWAY}/api/exoplanets/map`).then(json<StarPosition[]>),
+  // limit: 서버가 내려줄 별 개수 상한(가까운 순). 실제 표시 개수는 프론트 슬라이더로 필터.
+  starMap: (limit = 2000) =>
+    fetch(`${GATEWAY}/api/exoplanets/map?limit=${limit}`).then(json<StarPosition[]>),
 
   // DB에 저장된 외계행성 페이지 조회
   list: (page = 0, size = 15) =>
@@ -108,7 +117,7 @@ export const api = {
 
   // APOD: 오늘의 천문사진 수집(토큰 사용) 후 저장된 최신 1건 조회
   ingestApod: () =>
-    fetch(`${GATEWAY}/api/ingest/apod`, { method: "POST" }).then(json),
+    fetch(`${GATEWAY}/api/ingest/apod`, { method: "POST" }).then(json<ApodIngestResult>),
 
   ingestApodRecent: (count = 5) =>
     fetch(`${GATEWAY}/api/ingest/apod/recent?count=${count}`, { method: "POST" }).then(json),

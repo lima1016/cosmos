@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -84,9 +85,9 @@ public class ExoplanetService {
         return searchRepository.findByDistancePcLessThanEqual(maxDistancePc);
     }
 
-    /** 3D 우주 시각화용 항성(시스템) 위치 목록. */
-    public List<StarPosition> starMap() {
-        return repository.findStarPositions();
+    /** 3D 우주 시각화용 항성(시스템) 위치 목록. limit 로 상한(가까운 순)을 둔다. */
+    public List<StarPosition> starMap(int limit) {
+        return repository.findStarPositions(PageRequest.of(0, limit));
     }
 
     /** 특정 항성의 행성들(공전주기 오름차순). */

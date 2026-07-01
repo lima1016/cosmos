@@ -33,10 +33,10 @@ public class ExoplanetController {
         return service.stats();
     }
 
-    /** 3D 우주 시각화용 항성 위치(적경·적위·거리). */
+    /** 3D 우주 시각화용 항성 위치(적경·적위·거리). limit 로 상한(가까운 순, 기본 2000). */
     @GetMapping("/map")
-    public List<StarPosition> map() {
-        return service.starMap();
+    public List<StarPosition> map(@RequestParam(defaultValue = "2000") int limit) {
+        return service.starMap(limit);
     }
 
     /** 특정 항성계의 행성 목록 (별 클릭 시 상세). */

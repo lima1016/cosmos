@@ -1,5 +1,7 @@
 # 🌌 Cosmos — NASA 데이터 기반 천문학 탐구 플랫폼
 
+https://github.com/user-attachments/assets/96343edc-59a3-42d5-9eb4-3922c0d2325c
+
 NASA Open API에서 천문 데이터를 수집해 Kafka로 흘려보내고, 가공·색인·캐싱한 뒤
 AI로 행성의 나이·거리를 분석하여 대시보드로 시각화하는 MSA 프로젝트.
 

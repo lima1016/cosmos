@@ -14,8 +14,11 @@ from .schemas import (
     PredictResponse,
     StatusResponse,
     TrainResponse,
+    TranslateRequest,
+    TranslateResponse,
 )
 from .store import store
+from .translator import translate_en_to_ko
 
 
 @asynccontextmanager
@@ -67,4 +70,13 @@ def predict(req: PredictRequest):
         massEarth=preds.get("massEarth"),
         stellarAgeGyr=preds.get("stellarAgeGyr"),
         note="RandomForest 회귀 예측값",
+    )
+
+
+@app.post("/translate", response_model=TranslateResponse)
+def translate(req: TranslateRequest):
+    """제목·본문 영→한 번역(self-host 모델). 작성자(copyright)는 호출측에서 원문 유지."""
+    return TranslateResponse(
+        titleKo=translate_en_to_ko(req.title),
+        explanationKo=translate_en_to_ko(req.explanation),
     )

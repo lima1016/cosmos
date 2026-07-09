@@ -4,6 +4,7 @@ import com.lima.cosmos.core.domain.ExoplanetDocument;
 import com.lima.cosmos.core.domain.ExoplanetEntity;
 import com.lima.cosmos.core.service.ExoplanetService;
 import com.lima.cosmos.core.service.ExoplanetStats;
+import com.lima.cosmos.core.service.MassRadiusPoint;
 import com.lima.cosmos.core.service.StarPosition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,12 @@ public class ExoplanetController {
     @GetMapping("/stats")
     public ExoplanetStats stats() {
         return service.stats();
+    }
+
+    /** 질량–반지름 산점도용 점 목록(질량·반지름 둘 다 있는 행성). */
+    @GetMapping("/mass-radius")
+    public List<MassRadiusPoint> massRadius() {
+        return service.massRadius();
     }
 
     /** 3D 우주 시각화용 항성 위치(적경·적위·거리). limit 로 상한(가까운 순, 기본 2000). */

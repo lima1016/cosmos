@@ -18,10 +18,14 @@ public class NeoController {
 
     private final NeoService service;
 
-    /** 저장된 근지구 천체 접근 목록(접근일 순 상위 100). */
+    /**
+     * 저장된 근지구 천체 접근 목록.
+     * 기본: 오늘 이후 다가오는 접근만. from/to(YYYY-MM-DD) 지정 시 해당 구간(과거 포함) 조회.
+     */
     @GetMapping
-    public List<NeoDocument> recent() {
-        return service.recent();
+    public List<NeoDocument> list(@RequestParam(required = false) String from,
+                                  @RequestParam(required = false) String to) {
+        return service.list(from, to);
     }
 
     /** 다가오는 접근(오늘 이후). */

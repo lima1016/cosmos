@@ -1,6 +1,7 @@
 package com.lima.cosmos.core.repository;
 
 import com.lima.cosmos.core.domain.ExoplanetEntity;
+import com.lima.cosmos.core.service.MassRadiusPoint;
 import com.lima.cosmos.core.service.StarPosition;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,4 +43,16 @@ public interface ExoplanetRepository extends JpaRepository<ExoplanetEntity, Stri
 
     @Query("select e.discYear, count(e) from ExoplanetEntity e where e.discYear is not null group by e.discYear order by e.discYear")
     List<Object[]> countByDiscYear();
+
+    /** 반지름(지구=1) 값들 — 행성 유형 분류용(서비스에서 버킷팅). */
+    @Query("select e.radiusEarth from ExoplanetEntity e where e.radiusEarth is not null")
+    List<Double> radiiEarth();
+
+    /** 질량·반지름 둘 다 있는 행성의 (이름, 반지름, 질량) — 산점도용. */
+    @Query("""
+            select new com.lima.cosmos.core.service.MassRadiusPoint(e.name, e.radiusEarth, e.massEarth)
+            from ExoplanetEntity e
+            where e.radiusEarth is not null and e.massEarth is not null
+            """)
+    List<MassRadiusPoint> findMassRadiusPairs();
 }

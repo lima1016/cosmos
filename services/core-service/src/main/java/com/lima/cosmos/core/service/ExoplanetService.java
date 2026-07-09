@@ -124,7 +124,23 @@ public class ExoplanetService {
             byYear.put((Integer) row[0], (Long) row[1]);
         }
 
-        return new ExoplanetStats(total, avg, nearest, byMethod, byYear);
+        // 반지름 기준 행성 유형 분포. 표시 순서를 고정하려고 0으로 미리 채운다.
+        Map<String, Long> byType = new LinkedHashMap<>();
+        byType.put("Rocky", 0L);
+        byType.put("Super-Earth", 0L);
+        byType.put("Neptune-like", 0L);
+        byType.put("Gas Giant", 0L);
+        for (Double r : repository.radiiEarth()) {
+            String key = r < 1.25 ? "Rocky" : r < 2.0 ? "Super-Earth" : r < 6.0 ? "Neptune-like" : "Gas Giant";
+            byType.merge(key, 1L, Long::sum);
+        }
+
+        return new ExoplanetStats(total, avg, nearest, byMethod, byYear, byType);
+    }
+
+    /** 질량–반지름 산점도용 점 목록(둘 다 값이 있는 행성). */
+    public List<MassRadiusPoint> massRadius() {
+        return repository.findMassRadiusPairs();
     }
 
     private ExoplanetProcessed toProcessed(ExoplanetEntity e) {

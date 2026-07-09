@@ -10,7 +10,9 @@ public record ExoplanetStats(
         Double averageDistancePc,
         List<NearestPlanet> nearest,
         Map<String, Long> byDiscoveryMethod,
-        Map<Integer, Long> byDiscoveryYear
+        Map<Integer, Long> byDiscoveryYear,
+        // 반지름 기준 행성 유형 분포(암석형/슈퍼지구/해왕성형/목성형).
+        Map<String, Long> byPlanetType
 ) implements Serializable {
 
     public record NearestPlanet(String name, Double distancePc) implements Serializable {

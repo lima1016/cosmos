@@ -378,6 +378,7 @@ a {
   gap: 10px;
 }
 .gallery .thumb {
+  position: relative;
   cursor: pointer;
   border-radius: 10px;
   overflow: hidden;

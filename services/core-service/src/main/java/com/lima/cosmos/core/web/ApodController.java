@@ -5,6 +5,7 @@ import com.lima.cosmos.core.service.ApodService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,10 +28,13 @@ public class ApodController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    /** 저장된 천문 사진 목록(최근 24, ES). */
+    /**
+     * 저장된 천문 사진 목록(24개 페이지, 최신순).
+     * before(YYYY-MM-DD) 지정 시 더보기 — 그 날짜보다 과거 24개.
+     */
     @GetMapping
-    public List<ApodDocument> recent() {
-        return service.recent();
+    public List<ApodDocument> recent(@RequestParam(required = false) String before) {
+        return service.page(before);
     }
 
     /**
@@ -40,5 +44,16 @@ public class ApodController {
     @GetMapping("/exists")
     public Map<String, Object> exists(@RequestParam String date) {
         return Map.of("date", date, "exists", service.exists(date));
+    }
+
+    /**
+     * 해당 날짜 APOD 를 한국어로 번역해 반환(제목·본문만, 작성자는 원문 유지).
+     * 이미 번역돼 있으면 캐시된 값을, 없으면 ai-service 로 번역 후 ES 저장. 문서 없으면 204.
+     */
+    @PostMapping("/translate")
+    public ResponseEntity<ApodDocument> translate(@RequestParam String date) {
+        return service.translate(date)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

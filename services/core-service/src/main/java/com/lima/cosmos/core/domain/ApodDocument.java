@@ -33,6 +33,14 @@ public class ApodDocument {
     @Field(type = FieldType.Text)
     private String explanation;
 
+    // 한국어 번역(lazy). 조회 시 없으면 ai-service 로 번역해 채우고 ES에 캐시한다.
+    // copyright(작성자)는 번역하지 않고 원문을 그대로 둔다.
+    @Field(type = FieldType.Text)
+    private String titleKo;
+
+    @Field(type = FieldType.Text)
+    private String explanationKo;
+
     @Field(type = FieldType.Keyword, index = false)
     private String url;
 

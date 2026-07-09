@@ -1,24 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, NeoApproach } from "./api";
 import NeoRadar from "./NeoRadar";
-
-const TODAY = new Date().toISOString().slice(0, 10);
-
-type Filter = "all" | "upcoming" | "hazardous";
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: "all", label: "전체" },
-  { id: "upcoming", label: "다가오는" },
-  { id: "hazardous", label: "위험" },
-];
+import Term from "./Term";
 
 export default function NeoPanel() {
-  const [all, setAll] = useState<NeoApproach[]>([]);
+  const [rows0, setRows0] = useState<NeoApproach[]>([]);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [onlyHazard, setOnlyHazard] = useState(false);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [dateMode, setDateMode] = useState(false); // true=날짜 구간 조회 중, false=다가오는(기본)
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const load = () => api.neoList().then(setAll).catch((e) => setMsg(String(e)));
+  // 파라미터 없으면 서버가 다가오는 접근(오늘 이후)만 준다. 날짜 지정 시 그 구간(과거 포함).
+  const load = (f?: string, t?: string) =>
+    api.neoList(f, t).then(setRows0).catch((e) => setMsg(String(e)));
 
   useEffect(() => {
     load();
@@ -26,13 +23,42 @@ export default function NeoPanel() {
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return all.filter((n) => {
-      if (filter === "hazardous" && !n.hazardous) return false;
-      if (filter === "upcoming" && n.closeApproachDate < TODAY) return false;
+    return rows0.filter((n) => {
+      if (onlyHazard && !n.hazardous) return false;
       if (q && !n.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [all, search, filter]);
+  }, [rows0, search, onlyHazard]);
+
+  // 과거 포함 날짜 구간 조회.
+  const queryByDate = async () => {
+    if (!from && !to) return;
+    setBusy(true);
+    setMsg("날짜 조회 중…");
+    try {
+      await load(from || undefined, to || undefined);
+      setDateMode(true);
+      setMsg(`조회: ${from || "처음"} ~ ${to || "끝"}`);
+    } catch (e) {
+      setMsg(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // 기본 상태(다가오는 접근)로 되돌린다.
+  const showUpcoming = async () => {
+    setFrom("");
+    setTo("");
+    setDateMode(false);
+    setBusy(true);
+    try {
+      await load();
+      setMsg("다가오는 접근(오늘 이후)");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const collect = async () => {
     setBusy(true);
@@ -41,6 +67,9 @@ export default function NeoPanel() {
       // 오늘~+6일(7일 창) 범위 수집. 이미 저장돼 있으면 서버가 NASA 호출을 건너뜀.
       const res = await api.ingestNeo();
       await new Promise((r) => setTimeout(r, 1500));
+      setFrom("");
+      setTo("");
+      setDateMode(false);
       await load();
       setMsg(
         res.calledNasaApi
@@ -63,25 +92,38 @@ export default function NeoPanel() {
             placeholder="소행성 이름 검색…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ width: 200 }}
+            style={{ width: 180 }}
           />
           <div className="subtabs">
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                className={`tab${filter === f.id ? " active" : ""}`}
-                onClick={() => setFilter(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
+            <button
+              className={`tab${!dateMode ? " active" : ""}`}
+              disabled={busy}
+              onClick={showUpcoming}
+            >
+              다가오는
+            </button>
+            <button
+              className={`tab${onlyHazard ? " active" : ""}`}
+              onClick={() => setOnlyHazard((v) => !v)}
+            >
+              위험만
+            </button>
+          </div>
+          {/* 과거 데이터는 날짜 구간으로 조회 */}
+          <div className="neo-daterange" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <span className="muted">~</span>
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <button className="ghost" disabled={busy || (!from && !to)} onClick={queryByDate}>
+              날짜 조회
+            </button>
           </div>
         </div>
         <div className="actions">
           <button className="primary" disabled={busy} onClick={collect}>
             소행성 수집
           </button>
-          <button className="ghost" disabled={busy} onClick={load}>
+          <button className="ghost" disabled={busy} onClick={() => load(from || undefined, to || undefined)}>
             새로고침
           </button>
         </div>
@@ -89,11 +131,13 @@ export default function NeoPanel() {
 
       <div className="status">{msg}</div>
 
-      {all.length === 0 ? (
+      {rows0.length === 0 ? (
         <div className="card section">
           <h2>근지구 천체 · NeoWs</h2>
           <div className="muted">
-            저장된 데이터가 없습니다. ‘소행성 수집’으로 오늘~+6일의 지구 접근 천체를 받아오세요.
+            {dateMode
+              ? "해당 기간에 저장된 접근 데이터가 없습니다. 다른 날짜를 조회하거나 ‘소행성 수집’으로 받아오세요."
+              : "다가오는 접근 데이터가 없습니다. ‘소행성 수집’으로 오늘~+6일의 지구 접근 천체를 받아오세요."}
           </div>
         </div>
       ) : (
@@ -102,23 +146,31 @@ export default function NeoPanel() {
             <div className="head">
               <h2>근접 레이더 · 지구 기준</h2>
               <span className="muted" style={{ fontSize: 12 }}>
-                {rows.length} / {all.length}건 표시
+                {rows.length} / {rows0.length}건 표시
               </span>
             </div>
             <NeoRadar rows={rows} />
           </div>
 
           <div className="card section">
-            <h2>접근 목록</h2>
+            <h2>접근 목록{dateMode ? " · 날짜 조회" : " · 다가오는"}</h2>
             <table>
               <thead>
                 <tr>
                   <th>이름</th>
-                  <th>접근일</th>
-                  <th>최소거리 (달거리)</th>
-                  <th>속도 (km/s)</th>
+                  <th>
+                    <Term k="접근일">접근일</Term>
+                  </th>
+                  <th>
+                    최소거리 (<Term k="달거리">달거리</Term>)
+                  </th>
+                  <th>
+                    속도 (<Term k="km/s">km/s</Term>)
+                  </th>
                   <th>지름 (km)</th>
-                  <th>위험</th>
+                  <th>
+                    <Term k="위험">위험</Term>
+                  </th>
                 </tr>
               </thead>
               <tbody>

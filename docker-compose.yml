@@ -63,6 +63,9 @@ services:
       discovery.type: single-node
       xpack.security.enabled: "false"
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    # 인덱스(apod/exoplanet/neo)를 영속화 → 컨테이너 재생성에도 데이터 유지.
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s
@@ -136,3 +139,4 @@ services:
 volumes:
   pgdata:
   ai-models:
+  esdata:

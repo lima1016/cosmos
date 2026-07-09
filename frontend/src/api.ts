@@ -7,6 +7,13 @@ export interface Stats {
   nearest: { name: string; distancePc: number }[];
   byDiscoveryMethod: Record<string, number>;
   byDiscoveryYear: Record<string, number>;
+  byPlanetType: Record<string, number>; // 반지름 기준 유형 분포
+}
+
+export interface MassRadiusPoint {
+  name: string;
+  radiusEarth: number;
+  massEarth: number;
 }
 
 export interface StarPosition {
@@ -45,6 +52,9 @@ export interface Apod {
   hdurl?: string;
   mediaType?: string;
   copyright?: string;
+  // 한국어 번역(없을 수 있음 → 요청 시 서버가 번역·캐시). 작성자(copyright)는 번역 안 함.
+  titleKo?: string | null;
+  explanationKo?: string | null;
 }
 
 // 오늘의 APOD 수집 결과. calledNasaApi=false 면 이미 저장돼 있어 API 호출을 건너뛴 것.
@@ -97,7 +107,9 @@ async function json<T>(res: Response): Promise<T> {
     let detail = `${res.status} ${res.statusText}`;
     try {
       const body = await res.json();
-      if (body?.message) detail = body.message; // 서버가 보낸 친절한 메시지 우선
+      // 서버가 보낸 친절한 메시지 우선. Spring은 message, FastAPI는 detail(문자열) 사용.
+      if (body?.message) detail = body.message;
+      else if (typeof body?.detail === "string") detail = body.detail;
     } catch {
       /* 본문 없음 */
     }
@@ -108,6 +120,10 @@ async function json<T>(res: Response): Promise<T> {
 
 export const api = {
   stats: () => fetch(`${GATEWAY}/api/exoplanets/stats`).then(json<Stats>),
+
+  // 질량–반지름 산점도용 점 목록(질량·반지름 둘 다 있는 행성)
+  massRadius: () =>
+    fetch(`${GATEWAY}/api/exoplanets/mass-radius`).then(json<MassRadiusPoint[]>),
 
   // limit: 서버가 내려줄 별 개수 상한(가까운 순). 실제 표시 개수는 프론트 슬라이더로 필터.
   starMap: (limit = 2000) =>
@@ -156,8 +172,19 @@ export const api = {
     return res.json();
   },
 
-  // ES(apod 인덱스)에 저장된 천문사진 목록
-  apodGallery: () => fetch(`${GATEWAY}/api/apod`).then(json<Apod[]>),
+  // ES(apod 인덱스)에 저장된 천문사진 목록(24개 페이지, 최신순).
+  // before(YYYY-MM-DD): 더보기 — 그 날짜보다 과거 24개.
+  apodGallery: (before?: string) => {
+    const qs = before ? `?before=${encodeURIComponent(before)}` : "";
+    return fetch(`${GATEWAY}/api/apod${qs}`).then(json<Apod[]>);
+  },
+
+  // 해당 날짜 APOD 한국어 번역(제목·본문). 없으면 서버가 번역·캐시 후 반환.
+  // 최초 호출은 모델 로드로 수 분 걸릴 수 있음(이후 즉시).
+  translateApod: (date: string) =>
+    fetch(`${GATEWAY}/api/apod/translate?date=${encodeURIComponent(date)}`, {
+      method: "POST",
+    }).then(json<Apod>),
 
   // NeoWs: 근지구 천체 수집(토큰 사용) 후 저장분 조회
   ingestNeo: (startDate?: string, endDate?: string) => {
@@ -172,5 +199,12 @@ export const api = {
 
   neoUpcoming: () => fetch(`${GATEWAY}/api/neo/upcoming`).then(json<NeoApproach[]>),
   neoHazardous: () => fetch(`${GATEWAY}/api/neo/hazardous`).then(json<NeoApproach[]>),
-  neoList: () => fetch(`${GATEWAY}/api/neo`).then(json<NeoApproach[]>),
+  // 파라미터 없으면 다가오는 접근(오늘 이후)만. from/to(YYYY-MM-DD) 지정 시 그 구간(과거 포함) 조회.
+  neoList: (from?: string, to?: string) => {
+    const q = new URLSearchParams();
+    if (from) q.set("from", from);
+    if (to) q.set("to", to);
+    const qs = q.toString();
+    return fetch(`${GATEWAY}/api/neo${qs ? `?${qs}` : ""}`).then(json<NeoApproach[]>);
+  },
 };

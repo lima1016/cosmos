@@ -33,8 +33,16 @@ public class NeoService {
                 .build());
     }
 
-    public List<NeoDocument> recent() {
-        return repository.findTop100ByOrderByCloseApproachDateAsc();
+    /** 기본(파라미터 없음)은 다가오는 접근만. from/to 지정 시 해당 구간(과거 포함) 조회. */
+    public List<NeoDocument> list(String from, String to) {
+        boolean hasFrom = from != null && !from.isBlank();
+        boolean hasTo = to != null && !to.isBlank();
+        if (!hasFrom && !hasTo) {
+            return upcoming();
+        }
+        String lo = hasFrom ? from : "0000-01-01";
+        String hi = hasTo ? to : "9999-12-31";
+        return repository.findTop100ByCloseApproachDateBetweenOrderByCloseApproachDateAsc(lo, hi);
     }
 
     public List<NeoDocument> hazardous() {

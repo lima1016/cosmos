@@ -8,3 +8,5 @@ joblib==1.4.2
 kafka-python==3.0.7
 requests==2.32.3
 python-dotenv==1.0.1
+# 영→한 번역(self-host). torch 는 Dockerfile 에서 CPU 전용 인덱스로 별도 설치(용량 큰 CUDA판 회피).
+transformers==4.48.0

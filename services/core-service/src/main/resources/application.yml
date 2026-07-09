@@ -41,6 +41,10 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 cosmos:
+  # ai-service(FastAPI) 주소 — APOD 한국어 번역 호출용.
+  # 개발은 호스트(8000)의 ai-service 컨테이너, 배포 시 AI_SERVICE_URL 로 덮어씀.
+  ai:
+    base-url: ${AI_SERVICE_URL:http://localhost:8000}
   kafka:
     topic:
       raw-exoplanet: raw.exoplanet

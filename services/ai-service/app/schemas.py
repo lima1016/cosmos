@@ -25,3 +25,13 @@ class TrainResponse(BaseModel):
 class StatusResponse(BaseModel):
     collected_records: int
     models_trained: list[str]
+
+
+class TranslateRequest(BaseModel):
+    title: str
+    explanation: str
+
+
+class TranslateResponse(BaseModel):
+    titleKo: str
+    explanationKo: str

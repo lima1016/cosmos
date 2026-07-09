@@ -8,11 +8,16 @@ FROM python:3.13-slim
 #  - PYTHONDONTWRITEBYTECODE: .pyc 캐시 파일을 만들지 않음
 #  - PYTHONUNBUFFERED: 로그를 버퍼링 없이 즉시 출력(컨테이너 로그에 바로 보이게)
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    # HuggingFace 모델 캐시를 모델 볼륨(/app/models) 하위에 둔다 → 재빌드/재시작에도 재다운로드 안 함.
+    HF_HOME=/app/models/hf
 
 WORKDIR /app
 
-# 의존성 먼저 설치 (requirements.txt 가 안 바뀌면 이 레이어는 캐시 재사용 → 빌드 빨라짐)
+# torch 는 CPU 전용 휠로 설치(기본 PyPI 판은 CUDA 포함이라 수 GB 더 큼).
+RUN pip install --no-cache-dir torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+
+# 나머지 의존성 설치 (requirements.txt 가 안 바뀌면 이 레이어는 캐시 재사용 → 빌드 빨라짐)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
